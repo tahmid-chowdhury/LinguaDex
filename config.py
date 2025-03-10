@@ -99,6 +99,7 @@ CONVERSATION_TOPICS = {
         "Humor and Wordplay",
         "Specialized Terminology",
         "Abstract Concepts"
+        "Advanced Grammar"
     ]
 }
 
