@@ -1,0 +1,60 @@
+/* Fix for conversation container issues */
+
+/* Ensure the conversation container has proper height */
+.conversation-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 50vh; /* Minimum height of 70% of viewport height */
+    height: calc(70vh - 100px); /* Calculate height based on viewport minus headers */
+}
+
+/* Ensure the messages container shows messages and maintains size */
+.conversation-messages {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 50px; /* Minimum height to always show some messages */
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+/* Make sure message input container stays at bottom */
+.message-input-container {
+    flex-shrink: 0; /* Don't allow this to shrink */
+    margin-top: auto; /* Push to bottom */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .conversation-container {
+        min-height: 60vh;
+    }
+    
+    .conversation-messages {
+        min-height: 100px;
+    }
+}
+
+/* Force proper sizing of message elements */
+.message {
+    width: auto; /* Allow messages to size naturally */
+    max-width: 80%; /* Maximum width for readability */
+    margin-bottom: 16px;
+    display: block !important; /* Ensure display */
+}
+
+/* Ensure content area takes available space */
+.content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+main.content {
+    flex: 1;
+    overflow: auto;
+}

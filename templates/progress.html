@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress - Language Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fixes.css') }}">
+    
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Language Companion</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-details">
+                    <h3>{{ user.username }}</h3>
+                    <p>Learning: {{ languages[user.target_language] }}</p>
+                    <p>Level: {{ user.current_level }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('conversation') }}"><span class="icon">💬</span> Conversation</a></li>
+                <li><a href="{{ url_for('vocabulary') }}"><span class="icon">📚</span> Vocabulary</a></li>
+                <li><a href="{{ url_for('activities') }}"><span class="icon">🎮</span> Activities</a></li>
+                <li class="active"><a href="{{ url_for('view_progress') }}"><span class="icon">📈</span> Progress</a></li>
+                <li class="{{ 'active' if request.endpoint == 'settings' else '' }}">
+                    <a href="{{ url_for('settings') }}"><span class="icon">⚙️</span> Settings</a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <header class="content-header">
+                <h1>Learning Progress</h1>
+                <div class="progress-period">
+                    <select id="period-select">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 3 Months</option>
+                        <option value="365">Last Year</option>
+                    </select>
+                </div>
+            </header>
+            
+            <div class="progress-container">
+                <div class="progress-summary">
+                    <div class="summary-card">
+                        <h2>Level Progress</h2>
+                        <div class="level-info">
+                            <div class="current-level">
+                                <span class="level-label">Current Level</span>
+                                <span class="level-value">{{ progress.user_info.current_level }}</span>
+                            </div>
+                            <div class="next-level">
+                                <span class="level-label">Next Level</span>
+                                <span class="level-value">{{ progress.user_info.next_level or "Maximum level reached" }}</span>
+                            </div>
+                        </div>
+                        <div class="level-progress-container">
+                            <div class="level-progress-bar">
+                                <div class="level-progress-fill" style="width: {{ progress.user_info.level_progress_percent }}%"></div>
+                            </div>
+                            <span class="level-progress-value">{{ progress.user_info.level_progress_percent|round }}% complete</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h2>Activity Summary</h2>
+                        <div class="activity-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ progress.summary.active_days }}</span>
+                                <span class="stat-label">Active Days</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ progress.summary.total_vocabulary_learned }}</span>
+                                <span class="stat-label">Words Learned</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ progress.summary.total_conversation_minutes }}</span>
+                                <span class="stat-label">Minutes Practiced</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h2>Fluency Score</h2>
+                        <div class="fluency-score">
+                            <div class="big-score">{{ (progress.summary.average_fluency_score * 100)|round|int }}%</div>
+                            <div class="fluency-meter">
+                                <div class="fluency-fill" style="width: {{ progress.summary.average_fluency_score * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-charts">
+                    <div class="chart-card">
+                        <h2>Vocabulary Growth</h2>
+                        <div class="chart-container">
+                            {% if vocab_chart %}
+                                <img src="data:image/png;base64,{{ vocab_chart }}" alt="Vocabulary Growth Chart" class="chart-image">
+                            {% else %}
+                                <div class="chart-placeholder">
+                                    <p>Not enough data to display chart</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h2>Fluency Development</h2>
+                        <div class="chart-container">
+                            {% if fluency_chart %}
+                                <img src="data:image/png;base64,{{ fluency_chart }}" alt="Fluency Development Chart" class="chart-image">
+                            {% else %}
+                                <div class="chart-placeholder">
+                                    <p>Not enough data to display chart</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h2>Practice Time</h2>
+                        <div class="chart-container">
+                            {% if time_chart %}
+                                <img src="data:image/png;base64,{{ time_chart }}" alt="Practice Time Chart" class="chart-image">
+                            {% else %}
+                                <div class="chart-placeholder">
+                                    <p>Not enough data to display chart</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-details">
+                    <h2>Daily Progress</h2>
+                    <div class="daily-progress-container">
+                        <table class="daily-progress-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Words Added</th>
+                                    <th>Minutes Practiced</th>
+                                    <th>Fluency Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if progress.daily_progress %}
+                                    {% for day in progress.daily_progress %}
+                                        <tr>
+                                            <td>{{ day.date }}</td>
+                                            <td>{{ day.vocabulary_added }}</td>
+                                            <td>{{ day.minutes_practiced }}</td>
+                                            <td>
+                                                <div class="mini-fluency-meter">
+                                                    <div class="mini-fluency-fill" style="width: {{ day.fluency_score * 100 }}%"></div>
+                                                </div>
+                                                {{ (day.fluency_score * 100)|round|int }}%
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="no-data">No daily progress data available yet</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="vocabulary-distribution">
+                    <h2>Vocabulary Proficiency Distribution</h2>
+                    <div class="distribution-container">
+                        {% set total = progress.vocabulary.proficiency_distribution.low + 
+                                      progress.vocabulary.proficiency_distribution.medium + 
+                                      progress.vocabulary.proficiency_distribution.high %}
+                        {% if total > 0 %}
+                            {% set low_percent = (progress.vocabulary.proficiency_distribution.low / total * 100)|round|int %}
+                            {% set medium_percent = (progress.vocabulary.proficiency_distribution.medium / total * 100)|round|int %}
+                            {% set high_percent = (progress.vocabulary.proficiency_distribution.high / total * 100)|round|int %}
+                            
+                            <div class="distribution-bar">
+                                <div class="distribution-segment low" style="width: {{ low_percent }}%" 
+                                     title="Low proficiency: {{ progress.vocabulary.proficiency_distribution.low }} words ({{ low_percent }}%)">
+                                    {{ low_percent }}%
+                                </div>
+                                <div class="distribution-segment medium" style="width: {{ medium_percent }}%"
+                                     title="Medium proficiency: {{ progress.vocabulary.proficiency_distribution.medium }} words ({{ medium_percent }}%)">
+                                    {{ medium_percent }}%
+                                </div>
+                                <div class="distribution-segment high" style="width: {{ high_percent }}%"
+                                     title="High proficiency: {{ progress.vocabulary.proficiency_distribution.high }} words ({{ high_percent }}%)">
+                                    {{ high_percent }}%
+                                </div>
+                            </div>
+                            
+                            <div class="distribution-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color low"></div>
+                                    <div class="legend-label">Low proficiency ({{ progress.vocabulary.proficiency_distribution.low }} words)</div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color medium"></div>
+                                    <div class="legend-label">Medium proficiency ({{ progress.vocabulary.proficiency_distribution.medium }} words)</div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color high"></div>
+                                    <div class="legend-label">High proficiency ({{ progress.vocabulary.proficiency_distribution.high }} words)</div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No vocabulary data available yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Period selector functionality
+            const periodSelect = document.getElementById('period-select');
+            periodSelect.addEventListener('change', function() {
+                const period = this.value;
+                window.location.href = `{{ url_for('view_progress') }}?days=${period}`;
+            });
+            
+            // Set the selected period based on URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const days = urlParams.get('days');
+            if (days) {
+                periodSelect.value = days;
+            }
+        });
+    </script>
+</body>
+</html>

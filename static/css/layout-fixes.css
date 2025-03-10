@@ -1,0 +1,137 @@
+/* Layout Fixes for Language Learning Companion */
+
+/* General overflow fixes */
+body, html {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+.content {
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+/* Dashboard fixes */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    overflow-y: auto;
+    max-width: 100%;
+}
+
+/* Fix modal overflows */
+.modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Vocabulary page fixes */
+.vocabulary-container {
+    overflow-x: hidden;
+}
+
+.vocabulary-list-container {
+    overflow-x: auto;
+}
+
+.vocab-table {
+    width: 100%;
+    min-width: 600px; /* Ensure the table doesn't get too squished */
+}
+
+/* Fix table overflow */
+.vocab-table td {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Progress page fixes */
+.progress-container {
+    overflow-x: hidden;
+}
+
+.chart-image {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Conversation page fixes */
+.conversation-container {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.conversation-messages {
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Better mobile responsive design */
+@media (max-width: 768px) {
+    /* Stack sidebar and content on mobile */
+    .app-container {
+        flex-direction: column;
+    }
+    
+    /* Make sidebar more compact */
+    .sidebar {
+        width: 100%;
+        height: auto;
+    }
+    
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.875rem;
+    }
+    
+    /* Make nav links horizontal scroll on mobile */
+    .nav-links {
+        display: flex;
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+    
+    .nav-links li {
+        flex-shrink: 0;
+    }
+    
+    .nav-links li a {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Fix table layouts on mobile */
+    .vocab-table th, .vocab-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Adjust flashcards on mobile */
+    .flashcard {
+        min-height: 150px;
+    }
+    
+    /* Make conversation sidebar appear below on mobile */
+    .conversation-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #ecf0f1;
+    }
+}
+
+/* Fix for modal z-index issues */
+.modal {
+    z-index: 1000;
+}
+
+/* Fix for conversation sidebar */
+.conversation-container {
+    flex: 1 1 auto;
+}

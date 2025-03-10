@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary - Language Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fixes.css') }}">
+    
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Language Companion</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-details">
+                    <h3>{{ user.username }}</h3>
+                    <p>Learning: {{ languages[user.target_language] }}</p>
+                    <p>Level: {{ user.current_level }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('conversation') }}"><span class="icon">💬</span> Conversation</a></li>
+                <li class="active"><a href="{{ url_for('vocabulary') }}"><span class="icon">📚</span> Vocabulary</a></li>
+                <li><a href="{{ url_for('activities') }}"><span class="icon">🎮</span> Activities</a></li>
+                <li><a href="{{ url_for('view_progress') }}"><span class="icon">📈</span> Progress</a></li>
+                <li class="{{ 'active' if request.endpoint == 'settings' else '' }}">
+                    <a href="{{ url_for('settings') }}"><span class="icon">⚙️</span> Settings</a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <header class="content-header">
+                <h1>Vocabulary Manager</h1>
+                <div class="vocabulary-actions">
+                    <button id="add-word-btn" class="btn btn-primary">Add New Word</button>
+                    <button id="practice-btn" class="btn btn-secondary">Practice Flashcards</button>
+                </div>
+            </header>
+            
+            <div class="vocabulary-container">
+                <div class="vocabulary-stats">
+                    <div class="stat">
+                        <span class="stat-value">{{ total_count }}</span>
+                        <span class="stat-label">Total Words</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">{{ beginner_vocab|length }}</span>
+                        <span class="stat-label">Beginner</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">{{ intermediate_vocab|length }}</span>
+                        <span class="stat-label">Intermediate</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">{{ advanced_vocab|length }}</span>
+                        <span class="stat-label">Advanced</span>
+                    </div>
+                </div>
+                
+                <div class="vocabulary-tabs">
+                    <button class="tab-btn active" data-tab="all">All Words</button>
+                    <button class="tab-btn" data-tab="beginner">Beginner</button>
+                    <button class="tab-btn" data-tab="intermediate">Intermediate</button>
+                    <button class="tab-btn" data-tab="advanced">Advanced</button>
+                </div>
+                
+                <div class="vocabulary-search">
+                    <input type="text" id="vocab-search" placeholder="Search vocabulary...">
+                </div>
+                
+                <div class="vocabulary-list-container">
+                    <div id="all" class="vocabulary-list tab-pane active">
+                        {% if total_count > 0 %}
+                            <table class="vocab-table">
+                                <thead>
+                                    <tr>
+                                        <th>Word</th>
+                                        <th>Translation</th>
+                                        <th>Proficiency</th>
+                                        <th>Last Reviewed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set all_vocab = beginner_vocab + intermediate_vocab + advanced_vocab %}
+                                    {% for word in all_vocab %}
+                                        <tr class="vocab-row">
+                                            <td class="vocab-word">{{ word.word }}</td>
+                                            <td class="vocab-translation">{{ word.translation }}</td>
+                                            <td class="vocab-proficiency">
+                                                <div class="proficiency-bar">
+                                                    <div class="proficiency-fill" style="width: {{ word.proficiency * 100 }}%"></div>
+                                                </div>
+                                                <span class="proficiency-value">{{ (word.proficiency * 100)|round|int }}%</span>
+                                            </td>
+                                            <td class="vocab-date">{{ word.last_reviewed.strftime('%b %d, %Y') if word.last_reviewed else 'N/A' }}</td>
+                                            <td class="vocab-actions">
+                                                <button class="practice-word-btn" data-word="{{ word.word }}">Practice</button>
+                                                <button class="edit-word-btn" data-word="{{ word.word }}" data-translation="{{ word.translation }}">Edit</button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>You haven't added any vocabulary words yet.</p>
+                                <p>Start a conversation or add words manually to build your vocabulary.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="beginner" class="vocabulary-list tab-pane">
+                        {% if beginner_vocab %}
+                            <table class="vocab-table">
+                                <thead>
+                                    <tr>
+                                        <th>Word</th>
+                                        <th>Translation</th>
+                                        <th>Proficiency</th>
+                                        <th>Last Reviewed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for word in beginner_vocab %}
+                                        <tr class="vocab-row">
+                                            <td class="vocab-word">{{ word.word }}</td>
+                                            <td class="vocab-translation">{{ word.translation }}</td>
+                                            <td class="vocab-proficiency">
+                                                <div class="proficiency-bar">
+                                                    <div class="proficiency-fill" style="width: {{ word.proficiency * 100 }}%"></div>
+                                                </div>
+                                                <span class="proficiency-value">{{ (word.proficiency * 100)|round|int }}%</span>
+                                            </td>
+                                            <td class="vocab-date">{{ word.last_reviewed.strftime('%b %d, %Y') if word.last_reviewed else 'N/A' }}</td>
+                                            <td class="vocab-actions">
+                                                <button class="practice-word-btn" data-word="{{ word.word }}">Practice</button>
+                                                <button class="edit-word-btn" data-word="{{ word.word }}" data-translation="{{ word.translation }}">Edit</button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No beginner-level vocabulary words.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="intermediate" class="vocabulary-list tab-pane">
+                        {% if intermediate_vocab %}
+                            <table class="vocab-table">
+                                <thead>
+                                    <tr>
+                                        <th>Word</th>
+                                        <th>Translation</th>
+                                        <th>Proficiency</th>
+                                        <th>Last Reviewed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for word in intermediate_vocab %}
+                                        <tr class="vocab-row">
+                                            <td class="vocab-word">{{ word.word }}</td>
+                                            <td class="vocab-translation">{{ word.translation }}</td>
+                                            <td class="vocab-proficiency">
+                                                <div class="proficiency-bar">
+                                                    <div class="proficiency-fill" style="width: {{ word.proficiency * 100 }}%"></div>
+                                                </div>
+                                                <span class="proficiency-value">{{ (word.proficiency * 100)|round|int }}%</span>
+                                            </td>
+                                            <td class="vocab-date">{{ word.last_reviewed.strftime('%b %d, %Y') if word.last_reviewed else 'N/A' }}</td>
+                                            <td class="vocab-actions">
+                                                <button class="practice-word-btn" data-word="{{ word.word }}">Practice</button>
+                                                <button class="edit-word-btn" data-word="{{ word.word }}" data-translation="{{ word.translation }}">Edit</button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No intermediate-level vocabulary words.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="advanced" class="vocabulary-list tab-pane">
+                        {% if advanced_vocab %}
+                            <table class="vocab-table">
+                                <thead>
+                                    <tr>
+                                        <th>Word</th>
+                                        <th>Translation</th>
+                                        <th>Proficiency</th>
+                                        <th>Last Reviewed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for word in advanced_vocab %}
+                                        <tr class="vocab-row">
+                                            <td class="vocab-word">{{ word.word }}</td>
+                                            <td class="vocab-translation">{{ word.translation }}</td>
+                                            <td class="vocab-proficiency">
+                                                <div class="proficiency-bar">
+                                                    <div class="proficiency-fill" style="width: {{ word.proficiency * 100 }}%"></div>
+                                                </div>
+                                                <span class="proficiency-value">{{ (word.proficiency * 100)|round|int }}%</span>
+                                            </td>
+                                            <td class="vocab-date">{{ word.last_reviewed.strftime('%b %d, %Y') if word.last_reviewed else 'N/A' }}</td>
+                                            <td class="vocab-actions">
+                                                <button class="practice-word-btn" data-word="{{ word.word }}">Practice</button>
+                                                <button class="edit-word-btn" data-word="{{ word.word }}" data-translation="{{ word.translation }}">Edit</button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No advanced-level vocabulary words.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal for adding new words -->
+            <div id="add-word-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Add New Word</h2>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="add-word-form">
+                            <div class="form-group">
+                                <label for="new-word">Word ({{ languages[user.target_language] }})</label>
+                                <input type="text" id="new-word" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-translation">Translation ({{ languages[user.native_language] }})</label>
+                                <input type="text" id="new-translation" required>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Add Word</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal for editing words -->
+            <div id="edit-word-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Edit Word</h2>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-word-form">
+                            <input type="hidden" id="edit-word-original">
+                            <div class="form-group">
+                                <label for="edit-word-text">Word ({{ languages[user.target_language] }})</label>
+                                <input type="text" id="edit-word-text" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-translation">Translation ({{ languages[user.native_language] }})</label>
+                                <input type="text" id="edit-translation" required>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flashcard practice modal -->
+            <div id="flashcard-modal" class="modal hidden">
+                <div class="modal-content flashcard-modal-content">
+                    <div class="modal-header">
+                        <h2>Vocabulary Practice</h2>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="flashcard-container">
+                            {% set practice_words = beginner_vocab + intermediate_vocab %}
+                            {% if practice_words %}
+                                {% for word in practice_words[:10] %}
+                                    <div class="flashcard" data-word="{{ word.word }}" data-word-id="{{ loop.index }}">
+                                        <div class="flashcard-front">
+                                            <div class="flashcard-word">{{ word.word }}</div>
+                                            <div class="flashcard-hint">Click to see translation</div>
+                                        </div>
+                                        <div class="flashcard-back">
+                                            <div class="flashcard-translation">{{ word.translation }}</div>
+                                            {% if word.example_sentence %}
+                                                <div class="flashcard-example">{{ word.example_sentence }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                
+                                <div class="flashcard-controls">
+                                    <div class="flashcard-nav">
+                                        <button class="flashcard-nav-prev" disabled>&lt; Previous</button>
+                                        <span class="flashcard-counter">1 / {{ practice_words[:10]|length }}</span>
+                                        <button class="flashcard-nav-next">Next &gt;</button>
+                                    </div>
+                                    <div class="flashcard-feedback">
+                                        <button class="flashcard-dont-know">Don't Know</button>
+                                        <button class="flashcard-know">Know It</button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <p>You don't have any vocabulary words to practice yet.</p>
+                                    <p>Start a conversation or add words manually to build your vocabulary.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Vocabulary tab switching
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panes
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Show corresponding pane
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Add word modal functionality
+        const addWordBtn = document.getElementById('add-word-btn');
+        const addWordModal = document.getElementById('add-word-modal');
+        const editWordModal = document.getElementById('edit-word-modal');
+        const flashcardModal = document.getElementById('flashcard-modal');
+        
+        addWordBtn.addEventListener('click', () => {
+            addWordModal.classList.remove('hidden');
+        });
+        
+        // Practice flashcards button
+        const practiceBtn = document.getElementById('practice-btn');
+        practiceBtn.addEventListener('click', () => {
+            flashcardModal.classList.remove('hidden');
+            initFlashcards();
+        });
+        
+        // Close modals
+        document.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', () => {
+                addWordModal.classList.add('hidden');
+                editWordModal.classList.add('hidden');
+                flashcardModal.classList.add('hidden');
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === addWordModal) {
+                addWordModal.classList.add('hidden');
+            }
+            if (event.target === editWordModal) {
+                editWordModal.classList.add('hidden');
+            }
+            if (event.target === flashcardModal) {
+                flashcardModal.classList.add('hidden');
+            }
+        });
+        
+        // Add word form submission
+        const addWordForm = document.getElementById('add-word-form');
+        addWordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const word = document.getElementById('new-word').value.trim();
+            const translation = document.getElementById('new-translation').value.trim();
+            
+            if (word && translation) {
+                addVocabulary(word, translation)
+                    .then(data => {
+                        if (data.success) {
+                            // Reload page to show updated vocabulary
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to add word. Please try again.');
+                    });
+            }
+        });
+        
+        // Edit word buttons
+        document.querySelectorAll('.edit-word-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const word = button.getAttribute('data-word');
+                const translation = button.getAttribute('data-translation');
+                
+                document.getElementById('edit-word-original').value = word;
+                document.getElementById('edit-word-text').value = word;
+                document.getElementById('edit-translation').value = translation;
+                
+                editWordModal.classList.remove('hidden');
+            });
+        });
+        
+        // Practice word buttons
+        document.querySelectorAll('.practice-word-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const word = button.getAttribute('data-word');
+                // Implement individual word practice
+                alert(`Practice functionality for "${word}" would be implemented here.`);
+            });
+        });
+        
+        // Vocabulary search
+        const searchInput = document.getElementById('vocab-search');
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            
+            document.querySelectorAll('.vocab-row').forEach(row => {
+                const word = row.querySelector('.vocab-word').textContent.toLowerCase();
+                const translation = row.querySelector('.vocab-translation').textContent.toLowerCase();
+                
+                if (word.includes(searchTerm) || translation.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

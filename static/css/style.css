@@ -1,0 +1,956 @@
+/* 
+ * Language Learning Companion
+ * Main Stylesheet
+ */
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f7fa;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.5em;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+}
+
+h3 {
+    font-size: 1.25rem;
+}
+
+p {
+    margin-bottom: 1em;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: #2980b9;
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+.icon {
+    margin-right: 0.5rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: #2980b9;
+}
+
+.btn-primary {
+    background-color: #3498db;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #7f8c8d;
+}
+
+.btn-secondary:hover {
+    background-color: #95a5a6;
+}
+
+.btn-small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.error-message {
+    color: #e74c3c;
+    background-color: #fadbd8;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+/* Landing Page Styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.logo h1 {
+    color: #3498db;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-container {
+    max-width: 500px;
+    margin: 0 auto 3rem;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+    display: flex;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid #ecf0f1;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input, 
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.features {
+    text-align: center;
+}
+
+.features h2 {
+    margin-bottom: 2rem;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 1rem;
+    color: #7f8c8d;
+}
+
+/* Application Layout */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-header h2 {
+    color: white;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.user-info {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #3498db;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.user-details h3 {
+    color: white;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.user-details p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.nav-links {
+    list-style: none;
+    padding: 1.5rem 0;
+}
+
+.nav-links li a {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.2s;
+}
+
+.nav-links li a:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-links li.active a {
+    color: white;
+    background-color: #3498db;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-btn {
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+}
+
+.logout-btn:hover {
+    color: white;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.content-header {
+    padding: 1.5rem 2rem;
+    background-color: white;
+    border-bottom: 1px solid #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.content-header h1 {
+    margin: 0;
+}
+
+.date {
+    color: #7f8c8d;
+    font-size: 0.875rem;
+}
+
+/* Dashboard Styles */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.dashboard-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-card h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.summary-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3498db;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #7f8c8d;
+}
+
+.level-progress {
+    margin-top: 1rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #3498db;
+    border-radius: 4px;
+}
+
+.practice-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.practice-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.practice-option:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.practice-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.topic-list {
+    list-style: none;
+}
+
+.topic-list li {
+    margin-bottom: 0.5rem;
+}
+
+.topic-link {
+    display: block;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.topic-link:hover {
+    background-color: #e9ecef;
+}
+
+.vocab-cards {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.vocab-card {
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.word {
+    font-weight: 500;
+}
+
+.translation {
+    font-size: 0.875rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+.proficiency-bar {
+    height: 4px;
+    background-color: #ecf0f1;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.proficiency-fill {
+    height: 100%;
+    background-color: #2ecc71;
+    border-radius: 2px;
+}
+
+.conversation-list li {
+    margin-bottom: 0.5rem;
+}
+
+.conversation-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.conversation-link:hover {
+    background-color: #e9ecef;
+}
+
+.conversation-date {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
+.recommendation-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.recommendation-item {
+    display: flex;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.recommendation-icon {
+    font-size: 1.25rem;
+}
+
+/* Conversation Page Styles */
+.conversation-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.topic-badge {
+    background-color: #3498db;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+}
+
+.conversation-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    padding: 1.5rem;
+    height: calc(100vh - 70px);
+}
+
+.conversation-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    position: relative;
+}
+
+.user-message {
+    align-self: flex-end;
+    background-color: #3498db;
+    color: white;
+    border-bottom-right-radius: 0;
+}
+
+.ai-message {
+    align-self: flex-start;
+    background-color: #f0f2f5;
+    color: #333;
+    border-bottom-left-radius: 0;
+}
+
+.message-content {
+    margin-bottom: 0.5rem;
+}
+
+.message-translation {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.user-message .message-translation {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.user-message .message-meta {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ai-message .message-meta {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.translate-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.translate-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.user-message .translate-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.message-input-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+#message-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    resize: none;
+    margin-bottom: 0.5rem;
+}
+
+.input-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.conversation-sidebar {
+    width: 300px;
+    padding: 1.5rem;
+    background-color: white;
+    border-left: 1px solid #ecf0f1;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-section h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.insight-item {
+    margin-bottom: 1.5rem;
+}
+
+.fluency-meter {
+    height: 8px;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.fluency-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.fluency-meter.high .fluency-fill {
+    background-color: #2ecc71;
+}
+
+.fluency-meter.medium .fluency-fill {
+    background-color: #f39c12;
+}
+
+.fluency-meter.low .fluency-fill {
+    background-color: #e74c3c;
+}
+
+.fluency-value {
+    position: absolute;
+    right: 5px;
+    top: -18px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.grammar-list, .error-list {
+    list-style: none;
+    font-size: 0.875rem;
+}
+
+.grammar-list li, .error-list li {
+    margin-bottom: 0.5rem;
+}
+
+.error-original {
+    color: #e74c3c;
+    text-decoration: line-through;
+}
+
+.error-correction {
+    color: #2ecc71;
+    font-weight: 500;
+}
+
+.error-explanation {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    margin-top: 0.25rem;
+}
+
+.vocabulary-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.vocabulary-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.vocab-word {
+    font-weight: 500;
+}
+
+.vocab-level {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    justify-self: end;
+}
+
+.mastery-meter {
+    grid-column: 1 / -1;
+    height: 4px;
+    background-color: #ecf0f1;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.mastery-fill {
+    height: 100%;
+    border-radius: 2px;
+}
+
+.mastery-meter.high .mastery-fill {
+    background-color: #2ecc71;
+}
+
+.mastery-meter.medium .mastery-fill {
+    background-color: #f39c12;
+}
+
+.mastery-meter.low .mastery-fill {
+    background-color: #e74c3c;
+}
+
+.suggestion-item {
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-word {
+    font-weight: 500;
+}
+
+.suggestion-example {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+    }
+    
+    .nav-links {
+        display: flex;
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+    
+    .nav-links li {
+        flex-shrink: 0;
+    }
+    
+    .nav-links li a {
+        padding: 0.5rem 1rem;
+    }
+    
+    .content {
+        height: auto;
+        min-height: 0;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .conversation-container {
+        flex: none;
+        height: 60vh;
+    }
+    
+    .conversation-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #ecf0f1;
+    }
+}
+/* Additional padding for container elements */
+
+/* Vocabulary page containers */
+.vocabulary-container {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.vocabulary-list-container {
+    padding: 1rem;
+}
+
+/* Activities page containers */
+.activities-container {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.activities-suggestions {
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.activity-generator {
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+.activity-display {
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Progress page containers */
+.progress-container {
+    padding: 1.5rem;
+}
+
+.progress-summary, 
+.progress-charts, 
+.progress-details,
+.vocabulary-distribution {
+    margin-bottom: 2rem;
+}
+
+.summary-card,
+.chart-card {
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+/* General content padding improvements */
+.content {
+    padding-bottom: 2rem;
+}
+
+/* Ensure proper scrolling with new padding */
+.content {
+    overflow-y: auto;
+}
+
+/* Apply consistent container styling across sections */
+.vocabulary-stats,
+.activity-cards,
+.daily-progress-container {
+    padding: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+.romanization-section {
+    margin-top: 1.5rem;
+}
+
+.romanization-tools {
+    padding: 0.5rem;
+}
+
+.romanization-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.romanization-result {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    min-height: 50px;
+    display: none;
+}
+
+.result-text {
+    word-break: break-word;
+}

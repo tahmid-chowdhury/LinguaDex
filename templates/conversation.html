@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation - Language Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fixes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/conversation-fix.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/conversation-height-fix.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Language Companion</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-details">
+                    <h3>{{ user.username }}</h3>
+                    <p>Learning: {{ languages[user.target_language] }}</p>
+                    <p>Level: {{ user.current_level }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li class="active"><a href="{{ url_for('conversation') }}"><span class="icon">💬</span> Conversation</a></li>
+                <li><a href="{{ url_for('vocabulary') }}"><span class="icon">📚</span> Vocabulary</a></li>
+                <li><a href="{{ url_for('activities') }}"><span class="icon">🎮</span> Activities</a></li>
+                <li><a href="{{ url_for('view_progress') }}"><span class="icon">📈</span> Progress</a></li>
+                <li class="{{ 'active' if request.endpoint == 'settings' else '' }}">
+                    <a href="{{ url_for('settings') }}"><span class="icon">⚙️</span> Settings</a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <header class="content-header">
+                <h1>Conversation Practice</h1>
+                <div class="conversation-info">
+                    <span class="topic-badge">Topic: {{ conversation.topic }}</span>
+                    <button id="translate-toggle" class="btn btn-small">Show Translations</button>
+                </div>
+            </header>
+            
+            <div class="conversation-container">
+                <div class="conversation-messages" id="conversation-messages">
+                    {% for message in messages %}
+                        <div class="message {% if message.is_user %}user-message{% else %}ai-message{% endif %}">
+                            <div class="message-content">{{ message.content }}</div>
+                            <div class="message-translation hidden"></div>
+                            <div class="message-meta">
+                                <span class="message-time">{{ message.timestamp.strftime('%H:%M') }}</span>
+                                {% if not message.is_user %}
+                                    <button class="translate-btn" data-message-id="{{ message.id }}">
+                                        <span class="icon">🔄</span> Translate
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="message-input-container">
+                    <textarea id="message-input" placeholder="Type your message in {{ languages[user.target_language] }}..." rows="3"></textarea>
+                    <div class="input-actions">
+                        <button id="send-message" class="btn btn-primary">
+                            <span class="icon">📤</span> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="conversation-sidebar">
+                <div class="sidebar-section">
+                    <h3>Learning Insights</h3>
+                    <div id="learning-insights">
+                        <p>Your learning insights will appear here as you converse.</p>
+                    </div>
+                </div>
+                <div class="sidebar-section vocabulary-section">
+                    <h3>New Vocabulary</h3>
+                    <div id="new-vocabulary" class="vocabulary-list">
+                        <!-- New vocabulary words will be added here -->
+                    </div>
+                </div>
+                <div class="sidebar-section vocabulary-section">
+                    <h3>New Vocabulary</h3>
+                    <div id="new-vocabulary" class="vocabulary-list">
+                        <!-- New vocabulary words will be added here -->
+                    </div>
+                </div>
+                
+                <div class="sidebar-section suggestions-section">
+                    <h3>Suggested Responses</h3>
+                    <div id="suggested-responses">
+                        <!-- Suggested responses will be added here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Store conversation ID for API calls
+        const conversationId = {{ conversation.id }};
+        const userLanguage = "{{ user.target_language }}";
+        const nativeLanguage = "{{ user.native_language }}";
+        
+        // DOM elements
+        const messagesContainer = document.getElementById('conversation-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-message');
+        const translateToggle = document.getElementById('translate-toggle');
+        const learningInsights = document.getElementById('learning-insights');
+        const newVocabulary = document.getElementById('new-vocabulary');
+        const suggestedResponses = document.getElementById('suggested-responses');
+        
+        // Scroll to bottom of conversation
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            scrollToBottom();
+            
+            // Focus on input
+            messageInput.focus();
+        });
+        
+        // Send message
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Add message to UI immediately
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message user-message';
+            messageElement.innerHTML = `
+                <div class="message-content">${message}</div>
+                <div class="message-translation hidden"></div>
+                <div class="message-meta">
+                    <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            `;
+            messagesContainer.appendChild(messageElement);
+            scrollToBottom();
+            
+            // Send to API
+            fetch('/api/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    message: message
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Add AI response
+                const aiMessageElement = document.createElement('div');
+                aiMessageElement.className = 'message ai-message';
+                aiMessageElement.innerHTML = `
+                    <div class="message-content">${data.ai_message.content}</div>
+                    <div class="message-translation hidden"></div>
+                    <div class="message-meta">
+                        <span class="message-time">${new Date(data.ai_message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <button class="translate-btn" data-message-id="${data.ai_message.id}">
+                            <span class="icon">🔄</span> Translate
+                        </button>
+                    </div>
+                `;
+                messagesContainer.appendChild(aiMessageElement);
+                scrollToBottom();
+                
+                // Update learning insights
+                updateLearningInsights(data.analysis);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error message
+                const errorElement = document.createElement('div');
+                errorElement.className = 'error-message';
+                errorElement.textContent = 'Failed to send message. Please try again.';
+                messagesContainer.appendChild(errorElement);
+                scrollToBottom();
+            });
+        }
+        
+        // Translation functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('translate-btn') || e.target.closest('.translate-btn')) {
+                const btn = e.target.classList.contains('translate-btn') ? e.target : e.target.closest('.translate-btn');
+                const messageId = btn.getAttribute('data-message-id');
+                const messageElement = btn.closest('.message');
+                const contentElement = messageElement.querySelector('.message-content');
+                const translationElement = messageElement.querySelector('.message-translation');
+                
+                // If translation is already loaded, just toggle visibility
+                if (translationElement.textContent.trim() !== '') {
+                    translationElement.classList.toggle('hidden');
+                    return;
+                }
+                
+                // Show loading indicator
+                translationElement.textContent = 'Translating...';
+                translationElement.classList.remove('hidden');
+                
+                // Fetch translation
+                fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: contentElement.textContent,
+                        source_lang: userLanguage,
+                        target_lang: nativeLanguage
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    translationElement.textContent = data.translation;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    translationElement.textContent = 'Translation failed';
+                });
+            }
+        });
+        
+        // Toggle all translations
+        translateToggle.addEventListener('click', function() {
+            const translations = document.querySelectorAll('.message-translation');
+            const hasHidden = Array.from(translations).some(el => el.classList.contains('hidden'));
+            
+            if (hasHidden) {
+                // Show all translations
+                translations.forEach(el => el.classList.remove('hidden'));
+                translateToggle.textContent = 'Hide Translations';
+                
+                // Translate any that are empty
+                document.querySelectorAll('.message.ai-message').forEach(message => {
+                    const contentElement = message.querySelector('.message-content');
+                    const translationElement = message.querySelector('.message-translation');
+                    
+                    if (translationElement.textContent.trim() === '') {
+                        translationElement.textContent = 'Translating...';
+                        
+                        fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                text: contentElement.textContent,
+                                source_lang: userLanguage,
+                                target_lang: nativeLanguage
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            translationElement.textContent = data.translation;
+                        })
+                        .catch(error => {
+                            translationElement.textContent = 'Translation failed';
+                        });
+                    }
+                });
+                
+            } else {
+                // Hide all translations
+                translations.forEach(el => el.classList.add('hidden'));
+                translateToggle.textContent = 'Show Translations';
+            }
+        });
+        
+        // Update learning insights
+        function updateLearningInsights(analysis) {
+            if (!analysis) return;
+            
+            // Clear previous insights
+            learningInsights.innerHTML = '';
+            newVocabulary.innerHTML = '';
+            
+            // Add fluency score
+            if ('fluency' in analysis) {
+                const fluencyElement = document.createElement('div');
+                fluencyElement.className = 'insight-item';
+                
+                const fluencyScore = analysis.fluency * 100;
+                let fluencyClass = 'low';
+                if (fluencyScore > 70) {
+                    fluencyClass = 'high';
+                } else if (fluencyScore > 40) {
+                    fluencyClass = 'medium';
+                }
+                
+                fluencyElement.innerHTML = `
+                    <h4>Fluency Score</h4>
+                    <div class="fluency-meter ${fluencyClass}">
+                        <div class="fluency-fill" style="width: ${fluencyScore}%"></div>
+                        <span class="fluency-value">${Math.round(fluencyScore)}%</span>
+                    </div>
+                `;
+                learningInsights.appendChild(fluencyElement);
+            }
+            
+            // Add grammar feedback
+            if ('grammar' in analysis && analysis.grammar.structures) {
+                const grammarElement = document.createElement('div');
+                grammarElement.className = 'insight-item';
+                grammarElement.innerHTML = `
+                    <h4>Grammar Structures Used</h4>
+                    <ul class="grammar-list">
+                        ${analysis.grammar.structures.map(structure => `<li>${structure}</li>`).join('')}
+                    </ul>
+                `;
+                learningInsights.appendChild(grammarElement);
+            }
+            
+            // Add errors feedback
+            if ('errors' in analysis && analysis.errors.length > 0) {
+                const errorsElement = document.createElement('div');
+                errorsElement.className = 'insight-item errors-list';
+                errorsElement.innerHTML = `
+                    <h4>Corrections</h4>
+                    <ul class="error-list">
+                        ${analysis.errors.map(error => `
+                            <li>
+                                <div class="error-original">${error.original}</div>
+                                <div class="error-correction">${error.correction}</div>
+                                ${error.explanation ? `<div class="error-explanation">${error.explanation}</div>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                learningInsights.appendChild(errorsElement);
+            }
+            
+            // Add vocabulary insights
+            if ('vocabulary' in analysis && analysis.vocabulary.length > 0) {
+                // Sort by mastery level (lowest first)
+                const sortedVocab = [...analysis.vocabulary].sort((a, b) => (a.mastery || 0) - (b.mastery || 0));
+                
+                sortedVocab.forEach(word => {
+                    const wordElement = document.createElement('div');
+                    wordElement.className = 'vocabulary-item';
+                    
+                    const masteryPercent = (word.mastery || 0) * 100;
+                    let masteryClass = 'low';
+                    if (masteryPercent > 70) {
+                        masteryClass = 'high';
+                    } else if (masteryPercent > 40) {
+                        masteryClass = 'medium';
+                    }
+                    
+                    wordElement.innerHTML = `
+                        <div class="vocab-word">${word.word}</div>
+                        <div class="vocab-level">${word.level || 'Unknown'}</div>
+                        <div class="mastery-meter ${masteryClass}">
+                            <div class="mastery-fill" style="width: ${masteryPercent}%"></div>
+                        </div>
+                    `;
+                    newVocabulary.appendChild(wordElement);
+                });
+            }
+            
+            // Add suggestions
+            if ('suggestions' in analysis && analysis.suggestions.length > 0) {
+                suggestedResponses.innerHTML = '';
+                
+                analysis.suggestions.forEach(suggestion => {
+                    if (suggestion.type === 'vocabulary') {
+                        const suggestionElement = document.createElement('div');
+                        suggestionElement.className = 'suggestion-item vocabulary-suggestion';
+                        suggestionElement.innerHTML = `
+                            <div class="suggestion-word">${suggestion.item}</div>
+                            <div class="suggestion-example">${suggestion.example || ''}</div>
+                        `;
+                        suggestedResponses.appendChild(suggestionElement);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

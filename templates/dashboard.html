@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Language Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fixes.css') }}">
+    
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Language Companion</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-details">
+                    <h3>{{ user.username }}</h3>
+                    <p>Learning: {{ languages[user.target_language] }}</p>
+                    <p>Level: {{ user.current_level }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><a href="{{ url_for('dashboard') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('conversation') }}"><span class="icon">💬</span> Conversation</a></li>
+                <li><a href="{{ url_for('vocabulary') }}"><span class="icon">📚</span> Vocabulary</a></li>
+                <li><a href="{{ url_for('activities') }}"><span class="icon">🎮</span> Activities</a></li>
+                <li><a href="{{ url_for('view_progress') }}"><span class="icon">📈</span> Progress</a></li>
+                <li class="{{ 'active' if request.endpoint == 'settings' else '' }}">
+                    <a href="{{ url_for('settings') }}"><span class="icon">⚙️</span> Settings</a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <header class="content-header">
+                <h1>Welcome back, {{ user.username }}!</h1>
+                <p class="date">{{ now.strftime('%A, %B %d, %Y') }}</p>
+            </header>
+            
+            <div class="dashboard-grid">
+                <div class="dashboard-card summary">
+                    <h2>Your Learning Summary</h2>
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-value">{{ progress.vocabulary.total_words }}</span>
+                            <span class="stat-label">Words Learned</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">{{ progress.summary.total_conversation_minutes }}</span>
+                            <span class="stat-label">Minutes Practiced</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">{{ progress.summary.active_days }}</span>
+                            <span class="stat-label">Active Days</span>
+                        </div>
+                    </div>
+                    
+                    <div class="level-progress">
+                        <h3>Progress to {{ progress.user_info.next_level }}</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ progress.user_info.level_progress_percent }}%"></div>
+                        </div>
+                        <p>{{ progress.user_info.level_progress_percent|round }}% complete</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card quick-practice">
+                    <h2>Start Practicing</h2>
+                    <div class="practice-options">
+                        <a href="{{ url_for('conversation') }}" class="practice-option">
+                            <span class="practice-icon">💬</span>
+                            <span>New Conversation</span>
+                        </a>
+                        <a href="{{ url_for('vocabulary') }}" class="practice-option">
+                            <span class="practice-icon">🔤</span>
+                            <span>Review Vocabulary</span>
+                        </a>
+                        <a href="{{ url_for('activities') }}" class="practice-option">
+                            <span class="practice-icon">📝</span>
+                            <span>Language Activities</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card recommended-topics">
+                    <h2>Recommended Conversation Topics</h2>
+                    <ul class="topic-list">
+                        {% for topic in recommended_topics %}
+                            <li>
+                                <a href="{{ url_for('conversation', topic=topic) }}" class="topic-link">
+                                    {{ topic }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="dashboard-card vocabulary-review">
+                    <h2>Vocabulary to Review</h2>
+                    {% if vocab_to_review %}
+                        <div class="vocab-cards">
+                            {% for word in vocab_to_review[:5] %}
+                                <div class="vocab-card">
+                                    <div class="word">{{ word.word }}</div>
+                                    <div class="translation">{{ word.translation }}</div>
+                                    <div class="proficiency-bar">
+                                        <div class="proficiency-fill" style="width: {{ word.proficiency * 100 }}%"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('vocabulary') }}" class="btn btn-secondary">View All Vocabulary</a>
+                    {% else %}
+                        <p>No vocabulary words to review yet. Start a conversation to build your vocabulary!</p>
+                    {% endif %}
+                </div>
+                
+                <div class="dashboard-card recent-conversations">
+                    <h2>Recent Conversations</h2>
+                    {% if recent_conversations %}
+                        <ul class="conversation-list">
+                            {% for conv in recent_conversations %}
+                                <li>
+                                    <a href="{{ url_for('conversation', id=conv.id) }}" class="conversation-link">
+                                        <span class="conversation-topic">{{ conv.topic }}</span>
+                                        <span class="conversation-date">{{ conv.timestamp.strftime('%b %d, %Y') }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>You haven't had any conversations yet. <a href="{{ url_for('conversation') }}">Start one now!</a></p>
+                    {% endif %}
+                </div>
+                
+                <div class="dashboard-card recommendations">
+                    <h2>Learning Recommendations</h2>
+                    <div class="recommendation-list">
+                        {% if recommendations.focus_areas %}
+                            {% for focus in recommendations.focus_areas %}
+                                <div class="recommendation-item">
+                                    <span class="recommendation-icon">💡</span>
+                                    <span class="recommendation-text">{{ focus }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% if recommendations.next_level_progress %}
+                            <div class="recommendation-item">
+                                <span class="recommendation-icon">🚀</span>
+                                <span class="recommendation-text">
+                                    {% if recommendations.next_level_progress.estimated_days != "unknown" %}
+                                        You're about {{ recommendations.next_level_progress.vocabulary_needed }} words away from {{ recommendations.next_level_progress.next_level }} level.
+                                        Keep going at your current pace to reach it in approximately {{ recommendations.next_level_progress.estimated_days }} days!
+                                    {% else %}
+                                        Keep learning new vocabulary to progress to {{ recommendations.next_level_progress.next_level }} level!
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Set current date
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateElement = document.querySelector('.date');
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-US', options);
+        });
+    </script>
+</body>
+</html>

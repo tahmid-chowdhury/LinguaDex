@@ -1,0 +1,17 @@
+venv/
+
+__pycache__/
+
+./dist/
+
+.env
+
+*.db
+
+*.log
+
+*.bak
+
+.vscode/
+
+.idea/
