@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matching Activity - Language Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/matching.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Language Companion</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-details">
+                    <h3>{{ user.username }}</h3>
+                    <p>Learning: {{ languages[user.target_language] }}</p>
+                    <p>Level: {{ user.current_level }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('conversation') }}"><span class="icon">💬</span> Conversation</a></li>
+                <li><a href="{{ url_for('vocabulary') }}"><span class="icon">📚</span> Vocabulary</a></li>
+                <li class="active"><a href="{{ url_for('activities') }}"><span class="icon">🎮</span> Activities</a></li>
+                <li><a href="{{ url_for('view_progress') }}"><span class="icon">📈</span> Progress</a></li>
+                <li><a href="{{ url_for('settings') }}"><span class="icon">⚙️</span> Settings</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <header class="content-header">
+                <h1>Matching Activity</h1>
+                <p>Match words in your native language with their translations</p>
+            </header>
+            
+            <div class="matching-container">
+                <div class="matching-header">
+                    <h2>{{ matching_activity.title }}</h2>
+                    <p class="matching-description">{{ matching_activity.description }}</p>
+                    
+                    <div class="matching-info">
+                        <div class="score-display">
+                            <span>Score: </span><span id="score">0</span>/<span id="total-pairs">{{ matching_activity.word_pairs|length }}</span>
+                        </div>
+                        <div class="timer-display">
+                            <span>Time: </span><span id="timer">00:00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="matching-game">
+                    <div class="matching-columns">
+                        <div class="native-column">
+                            <h3>{{ languages[user.native_language] }}</h3>
+                            <div class="word-list" id="native-words">
+                                {% for pair in matching_activity.word_pairs %}
+                                    <div class="word-item" data-index="{{ loop.index0 }}">{{ pair.native }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="target-column">
+                            <h3>{{ languages[user.target_language] }}</h3>
+                            <div class="word-list" id="target-words">
+                                {% for pair in matching_activity.shuffled_pairs %}
+                                    <div class="word-item" data-index="{{ pair.original_index }}">{{ pair.target }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="matching-controls">
+                    <button id="check-matches" class="btn btn-primary">Check Matches</button>
+                    <button id="reset-game" class="btn btn-secondary">Reset</button>
+                    <a href="{{ url_for('matching_activity') }}?new=true" class="btn btn-secondary">New Words</a>
+                </div>
+                
+                <div id="results" class="results-container hidden">
+                    <h3>Results</h3>
+                    <p>You matched <span id="correct-count">0</span> out of {{ matching_activity.word_pairs|length }} pairs correctly!</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="review-section">
+                        <h4>Review:</h4>
+                        <div class="review-pairs">
+                            {% for pair in matching_activity.word_pairs %}
+                                <div class="review-pair">
+                                    <span class="native-word">{{ pair.native }}</span>
+                                    <span class="match-arrow">➔</span>
+                                    <span class="target-word">{{ pair.target }}</span>
+                                    {% if pair.pronunciation %}
+                                        <span class="pronunciation">[{{ pair.pronunciation }}]</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hints-container">
+                    <h3>Hints</h3>
+                    <ul class="hints-list">
+                        {% for hint in matching_activity.hints %}
+                            <li>{{ hint }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Game state
+        let selectedNative = null;
+        let selectedTarget = null;
+        let matches = [];
+        let startTime = null;
+        let timerInterval = null;
+        let gameCompleted = false;
+        
+        // DOM elements
+        const nativeWords = document.querySelectorAll('#native-words .word-item');
+        const targetWords = document.querySelectorAll('#target-words .word-item');
+        const checkButton = document.getElementById('check-matches');
+        const resetButton = document.getElementById('reset-game');
+        const resultsContainer = document.getElementById('results');
+        const scoreElement = document.getElementById('score');
+        const correctCountElement = document.getElementById('correct-count');
+        const progressFillElement = document.getElementById('progress-fill');
+        const timerElement = document.getElementById('timer');
+        
+        // Initialize the game
+        function initGame() {
+            // Clear any existing matches
+            matches = [];
+            gameCompleted = false;
+            
+            // Reset selections
+            selectedNative = null;
+            selectedTarget = null;
+            
+            // Reset visual state
+            nativeWords.forEach(word => {
+                word.classList.remove('selected', 'matched', 'error');
+            });
+            
+            targetWords.forEach(word => {
+                word.classList.remove('selected', 'matched', 'error');
+            });
+            
+            // Hide results
+            resultsContainer.classList.add('hidden');
+            
+            // Update score
+            updateScore();
+            
+            // Start timer
+            startTimer();
+        }
+        
+        // Handle word selection
+        function selectWord(type, element) {
+            // If game is completed, don't allow selection
+            if (gameCompleted) return;
+            
+            const index = element.dataset.index;
+            
+            if (type === 'native') {
+                // Deselect previous native word if any
+                if (selectedNative !== null) {
+                    nativeWords[selectedNative].classList.remove('selected');
+                }
+                
+                // Select current word
+                element.classList.add('selected');
+                selectedNative = Array.from(nativeWords).indexOf(element);
+                
+                // Check if we can make a match
+                checkForMatch();
+            } else {
+                // Deselect previous target word if any
+                if (selectedTarget !== null) {
+                    targetWords[selectedTarget].classList.remove('selected');
+                }
+                
+                // Select current word
+                element.classList.add('selected');
+                selectedTarget = Array.from(targetWords).indexOf(element);
+                
+                // Check if we can make a match
+                checkForMatch();
+            }
+        }
+        
+        // Check if we have a valid match
+        function checkForMatch() {
+            if (selectedNative !== null && selectedTarget !== null) {
+                const nativeIndex = nativeWords[selectedNative].dataset.index;
+                const targetIndex = targetWords[selectedTarget].dataset.index;
+                
+                // If indices match, it's a correct pair
+                if (nativeIndex === targetIndex) {
+                    // Mark as matched
+                    nativeWords[selectedNative].classList.add('matched');
+                    nativeWords[selectedNative].classList.remove('selected');
+                    
+                    targetWords[selectedTarget].classList.add('matched');
+                    targetWords[selectedTarget].classList.remove('selected');
+                    
+                    // Add to matches
+                    matches.push({
+                        nativeIndex: selectedNative,
+                        targetIndex: selectedTarget,
+                        correct: true
+                    });
+                    
+                    // Reset selections
+                    selectedNative = null;
+                    selectedTarget = null;
+                    
+                    // Update score
+                    updateScore();
+                    
+                    // Check if game is complete
+                    if (matches.length === nativeWords.length) {
+                        endGame();
+                    }
+                }
+            }
+        }
+        
+        // Check all current selections
+        function checkAllMatches() {
+            // First, add any current selection if both selected
+            if (selectedNative !== null && selectedTarget !== null) {
+                const nativeIndex = nativeWords[selectedNative].dataset.index;
+                const targetIndex = targetWords[selectedTarget].dataset.index;
+                
+                // Add to matches (correct or not)
+                matches.push({
+                    nativeIndex: selectedNative,
+                    targetIndex: selectedTarget,
+                    correct: nativeIndex === targetIndex
+                });
+                
+                // Reset selections
+                selectedNative = null;
+                selectedTarget = null;
+            }
+            
+            // Check all remaining unmatched words
+            const unmatchedNative = Array.from(nativeWords).filter((word, index) => 
+                !matches.some(match => match.nativeIndex === index)
+            );
+            
+            const unmatchedTarget = Array.from(targetWords).filter((word, index) => 
+                !matches.some(match => match.targetIndex === index)
+            );
+            
+            // Create pairs from unmatched words
+            for (let i = 0; i < unmatchedNative.length; i++) {
+                const nativeIndex = Array.from(nativeWords).indexOf(unmatchedNative[i]);
+                const targetIndex = Array.from(targetWords).indexOf(unmatchedTarget[i]);
+                
+                const nativeDataIndex = unmatchedNative[i].dataset.index;
+                const targetDataIndex = unmatchedTarget[i].dataset.index;
+                
+                // Add to matches
+                matches.push({
+                    nativeIndex: nativeIndex,
+                    targetIndex: targetIndex,
+                    correct: nativeDataIndex === targetDataIndex
+                });
+            }
+            
+            // Visualize all matches
+            visualizeMatches();
+            
+            // End game
+            endGame();
+        }
+        
+        // Visualize all matches (correct and incorrect)
+        function visualizeMatches() {
+            matches.forEach(match => {
+                if (match.correct) {
+                    nativeWords[match.nativeIndex].classList.add('matched');
+                    targetWords[match.targetIndex].classList.add('matched');
+                } else {
+                    nativeWords[match.nativeIndex].classList.add('error');
+                    targetWords[match.targetIndex].classList.add('error');
+                }
+            });
+        }
+        
+        // Update the score display
+        function updateScore() {
+            const correctMatches = matches.filter(match => match.correct).length;
+            scoreElement.textContent = correctMatches;
+        }
+        
+        // Start the timer
+        function startTimer() {
+            // Clear any existing timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Reset timer display
+            timerElement.textContent = "00:00";
+            
+            // Set start time
+            startTime = new Date();
+            
+            // Start interval
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        // Update the timer display
+        function updateTimer() {
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            
+            timerElement.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // End the game
+        function endGame() {
+            // Stop timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Calculate score
+            const correctMatches = matches.filter(match => match.correct).length;
+            const totalPairs = nativeWords.length;
+            const percentageCorrect = (correctMatches / totalPairs) * 100;
+            
+            // Update results
+            correctCountElement.textContent = correctMatches;
+            progressFillElement.style.width = `${percentageCorrect}%`;
+            
+            // Show results
+            resultsContainer.classList.remove('hidden');
+            
+            // Mark game as completed
+            gameCompleted = true;
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize game
+            initGame();
+            
+            // Add click handlers for native words
+            nativeWords.forEach(word => {
+                word.addEventListener('click', function() {
+                    selectWord('native', this);
+                });
+            });
+            
+            // Add click handlers for target words
+            targetWords.forEach(word => {
+                word.addEventListener('click', function() {
+                    selectWord('target', this);
+                });
+            });
+            
+            // Check matches button
+            checkButton.addEventListener('click', checkAllMatches);
+            
+            // Reset button
+            resetButton.addEventListener('click', initGame);
+        });
+    </script>
+</body>
+</html>

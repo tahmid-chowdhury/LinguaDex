@@ -1534,6 +1534,274 @@ def update_settings():
     # Redirect back to settings page with success message
     return redirect(url_for('settings', success=True))
 
+"""
+Routes for the matching activity to add to your app.py file
+"""
+
+import random
+
+@app.route('/matching')
+@login_required
+def matching_activity():
+    """Render the matching activity page."""
+    user_id = session['user_id']
+    user = db_handler.get_user(user_id=user_id)
+    
+    if not user:
+        session.clear()
+        return redirect(url_for('login', error="User not found. Please login again."))
+    
+    # Check if the user wants new words
+    new_words = request.args.get('new', 'false') == 'true'
+    
+    # Get or generate matching activity
+    matching_activity = generate_matching_activity(
+        user_info={
+            "username": user.username,
+            "target_language": user.target_language,
+            "native_language": user.native_language,
+            "current_level": user.current_level
+        },
+        word_count=10,  # Number of word pairs to generate
+        force_new=new_words
+    )
+    
+    return render_template('matching.html',
+                          user=user,
+                          matching_activity=matching_activity,
+                          languages=SUPPORTED_LANGUAGES)
+
+def generate_matching_activity(user_info, word_count=10, force_new=False):
+    """
+    Generate a matching activity with words in the user's native language
+    and their translations in the target language.
+    
+    Args:
+        user_info: Dictionary with user properties
+        word_count: Number of word pairs to generate
+        force_new: Whether to force generating new words
+        
+    Returns:
+        Dictionary with matching activity details
+    """
+    target_language = user_info.get("target_language", "en")
+    native_language = user_info.get("native_language", "en")
+    level = user_info.get("current_level", "Beginner")
+    
+    language_name = SUPPORTED_LANGUAGES.get(target_language, "English")
+    native_language_name = SUPPORTED_LANGUAGES.get(native_language, "English")
+    
+    # Try to get words from the user's vocabulary if available
+    user_id = session.get('user_id')
+    if user_id and not force_new:
+        user_vocab = db_handler.get_user_vocabulary(
+            user_id=user_id,
+            limit=word_count * 2  # Get more words than needed so we can randomly select
+        )
+        
+        if len(user_vocab) >= word_count:
+            # Randomly select words from user's vocabulary
+            selected_vocab = random.sample(user_vocab, word_count)
+            
+            # Format as word pairs
+            word_pairs = [
+                {
+                    "native": v.get("translation", ""),
+                    "target": v.get("word", ""),
+                    "pronunciation": get_pronunciation(v.get("word", ""), target_language)
+                }
+                for v in selected_vocab if v.get("translation") and v.get("word")
+            ]
+            
+            # If we have enough valid pairs, use them
+            if len(word_pairs) >= word_count / 2:
+                return format_matching_activity(word_pairs, language_name, native_language_name, level)
+    
+    # If we don't have enough vocabulary or force_new is True, generate words using the LLM
+    try:
+        prompt = f"""
+Generate {word_count} vocabulary word pairs for a {level} level student learning {language_name}.
+Their native language is {native_language_name}.
+
+Provide the following in a structured JSON format:
+{{
+  "word_pairs": [
+    {{
+      "native": "word in {native_language_name}",
+      "target": "translation in {language_name}",
+      "pronunciation": "pronunciation guide (only for non-Latin script languages)"
+    }}
+  ]
+}}
+
+For languages that don't use Latin script (like Japanese, Arabic, Russian, etc.), 
+include a pronunciation guide in the "pronunciation" field.
+For Latin script languages, leave the pronunciation field empty.
+
+Make sure the words are appropriate for a {level} level student.
+
+Output ONLY valid JSON without additional text.
+"""
+        
+        # Generate word pairs with OpenAI
+        response = openai.ChatCompletion.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": f"You are a language learning vocabulary assistant specializing in {language_name} and {native_language_name}."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1024
+        )
+        result_text = response.choices[0].message.content.strip()
+        
+        # Extract JSON
+        if result_text.startswith("```json"):
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif result_text.startswith("```"):
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+        
+        # Parse JSON
+        result = json.loads(result_text)
+        word_pairs = result.get("word_pairs", [])
+        
+        # Ensure we have enough word pairs
+        if len(word_pairs) < word_count:
+            # Add some default pairs if needed
+            default_pairs = [
+                {"native": "hello", "target": get_translation("hello", "en", target_language)},
+                {"native": "goodbye", "target": get_translation("goodbye", "en", target_language)},
+                {"native": "thank you", "target": get_translation("thank you", "en", target_language)},
+                {"native": "yes", "target": get_translation("yes", "en", target_language)},
+                {"native": "no", "target": get_translation("no", "en", target_language)},
+                {"native": "please", "target": get_translation("please", "en", target_language)},
+                {"native": "excuse me", "target": get_translation("excuse me", "en", target_language)},
+                {"native": "sorry", "target": get_translation("sorry", "en", target_language)},
+                {"native": "water", "target": get_translation("water", "en", target_language)},
+                {"native": "food", "target": get_translation("food", "en", target_language)}
+            ]
+            
+            # Add missing pairs
+            while len(word_pairs) < word_count and default_pairs:
+                word_pairs.append(default_pairs.pop(0))
+        
+        return format_matching_activity(word_pairs, language_name, native_language_name, level)
+        
+    except Exception as e:
+        print(f"Error generating matching activity: {e}")
+        # Provide a fallback activity
+        return get_fallback_matching_activity(target_language, native_language, level)
+
+def format_matching_activity(word_pairs, language_name, native_language_name, level):
+    """Format the matching activity with shuffled target words."""
+    # Create a shuffled copy of word pairs for the target language column
+    shuffled_pairs = []
+    for i, pair in enumerate(word_pairs):
+        shuffled_pairs.append({
+            "target": pair["target"],
+            "original_index": i
+        })
+    
+    # Shuffle the target language words
+    random.shuffle(shuffled_pairs)
+    
+    # Generate appropriate hints based on the languages
+    hints = [
+        f"Click on a word in your native language ({native_language_name}), then click on its translation in {language_name}.",
+        "Words will be highlighted when correctly matched.",
+        "Try to match all words correctly as quickly as possible."
+    ]
+    
+    # Add a hint about non-Latin scripts if applicable
+    non_latin_scripts = ["ja", "zh", "ko", "ru", "ar", "he", "el", "hi", "th"]
+    if any(lang in non_latin_scripts for lang in [language_name.lower()]):
+        hints.append("Pronunciation guides are provided in the review section to help you with non-Latin script words.")
+    
+    # Create activity structure
+    activity = {
+        "title": f"{language_name} Vocabulary Matching",
+        "description": f"Match each word in {native_language_name} with its correct translation in {language_name}.",
+        "word_pairs": word_pairs,
+        "shuffled_pairs": shuffled_pairs,
+        "hints": [
+            f"Click on a word in your native language ({native_language_name}), then click on its translation in {language_name}.",
+            "Words will be highlighted when correctly matched.",
+            "Try to match all words correctly as quickly as possible."
+        ],
+        "level": level
+    }
+    
+    return activity
+
+def get_pronunciation(word, language_code):
+    """Get pronunciation guide for non-Latin script languages."""
+    # Only provide pronunciation for non-Latin script languages
+    non_latin_scripts = ["ja", "zh", "ko", "ru", "ar", "he", "el", "hi", "th"]
+    
+    if language_code not in non_latin_scripts:
+        return ""
+    
+    try:
+        # We could use the LLM to generate a pronunciation guide,
+        # but for simplicity, we'll just return an empty string here
+        # In a full implementation, you would call the translation API
+        # to get a romanized version of the word
+        return ""
+    except:
+        return ""
+
+def get_translation(word, source_lang, target_lang):
+    """Translate a word from source language to target language."""
+    try:
+        translation = llm_handler.translate_text(word, source_lang, target_lang)
+        return translation
+    except:
+        # Return the original word if translation fails
+        return word
+
+    activity = {
+        "title": f"{language_name} Vocabulary Matching",
+        "description": f"Match each word in {native_language_name} with its correct translation in {language_name}.",
+        "word_pairs": word_pairs,
+        "shuffled_pairs": shuffled_pairs,
+        "hints": hints,
+        "level": level
+    }
+    
+    return activity
+
+def get_fallback_matching_activity(target_lang, native_lang, level):
+    """Create a fallback matching activity with basic vocabulary."""
+    language_name = SUPPORTED_LANGUAGES.get(target_lang, "this language")
+    native_language_name = SUPPORTED_LANGUAGES.get(native_lang, "your language")
+    
+    # Basic vocabulary pairs (these would be auto-translated in a real implementation)
+    word_pairs = [
+        {"native": "hello", "target": "hello in target language", "pronunciation": ""},
+        {"native": "goodbye", "target": "goodbye in target language", "pronunciation": ""},
+        {"native": "thank you", "target": "thank you in target language", "pronunciation": ""},
+        {"native": "yes", "target": "yes in target language", "pronunciation": ""},
+        {"native": "no", "target": "no in target language", "pronunciation": ""},
+        {"native": "please", "target": "please in target language", "pronunciation": ""},
+        {"native": "excuse me", "target": "excuse me in target language", "pronunciation": ""},
+        {"native": "sorry", "target": "sorry in target language", "pronunciation": ""},
+        {"native": "water", "target": "water in target language", "pronunciation": ""},
+        {"native": "food", "target": "food in target language", "pronunciation": ""}
+    ]
+    
+    # Create shuffled pairs
+    shuffled_pairs = []
+    for i, pair in enumerate(word_pairs):
+        shuffled_pairs.append({
+            "target": pair["target"],
+            "original_index": i
+        })
+    
+    # Shuffle the target language words
+    random.shuffle(shuffled_pairs)
+    
+    # Create activity structure
+
 # Error handlers
 @app.errorhandler(404)
 def page_not_found(e):
