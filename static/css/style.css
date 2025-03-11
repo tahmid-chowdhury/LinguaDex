@@ -546,7 +546,6 @@ footer {
     flex: 1;
     overflow: hidden;
     padding: 1.5rem;
-    height: calc(100vh - 70px);
 }
 
 .conversation-messages {
@@ -657,10 +656,10 @@ footer {
 
 .conversation-sidebar {
     width: 300px;
-    padding: 1.5rem;
+    padding: 2rem;
     background-color: white;
     border-left: 1px solid #ecf0f1;
-    overflow-y: auto;
+    overflow-y: flex;
 }
 
 .sidebar-section {
@@ -849,6 +848,53 @@ footer {
         border-top: 1px solid #ecf0f1;
     }
 }
+/* Conversation box height adjustments */
+
+/* Adjust the conversation container to be smaller */
+.conversation-container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(40vh - 50px); /* Decrease the height */
+    min-height: 100px;
+}
+
+/* Adjust the message area to be smaller */
+.conversation-messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 150px; /* Reduce the minimum height */
+    max-height: calc(50vh - 70px); /* Decrease the maximum height */
+    padding-bottom: 20px;
+}
+
+/* Fix the input area at the bottom */
+.message-input-container {
+    flex: 0 0 auto;
+    margin-top: 10px;
+}
+
+/* When in side-by-side layout with the insights panel */
+@media (min-width: 992px) {
+    .content {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    
+    main.content {
+        overflow: hidden;
+    }
+    
+    .conversation-container {
+        height: calc(100vh - 70px);
+    }
+}
+
+/* Make textarea taller */
+#message-input {
+    min-height: 60px; /* Increase the textarea height */
+}
 /* Additional padding for container elements */
 
 /* Vocabulary page containers */
@@ -928,29 +974,52 @@ footer {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     margin-bottom: 1.5rem;
 }
-.romanization-section {
-    margin-top: 1.5rem;
+/* Targeted fix for activities page layout */
+.activities-container {
+    overflow: visible; /* Don't force scrolling on the container */
+    margin-bottom: 20px;
 }
 
-.romanization-tools {
-    padding: 0.5rem;
+.activity-display {
+    overflow: visible; /* Don't force scrolling on the activity display */
+    margin-bottom: 20px;
 }
 
-.romanization-buttons {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+/* Make the entire content area scrollable instead */
+main.content {
+    overflow-y: auto;
+    height: 100vh;
+    padding-bottom: 30px;
 }
 
-.romanization-result {
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    min-height: 50px;
-    display: none;
+/* Fix the suggested activities section */
+.activities-suggestions {
+    margin-top: 20px;
+    padding: 15px;
 }
 
-.result-text {
-    word-break: break-word;
+/* Ensure activity cards display properly */
+.activity-card {
+    margin-bottom: 20px;
+    overflow: visible; /* Don't add scrollbars to cards */
+}
+
+/* Only add scrolling to specific elements that need it */
+.reading-text, .text-with-blanks {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Make scrollbars less intrusive */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
 }

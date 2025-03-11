@@ -1,12 +1,12 @@
 import datetime
 from typing import Dict, List, Any, Optional, Tuple
 import json
+import io
+import base64
 # Add these lines at the top of models/progress_tracker.py
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive Agg backend
 import matplotlib.pyplot as plt
-import io
-import base64
 
 from database.db_handler import DatabaseHandler
 from config import WORDS_PER_LEVEL

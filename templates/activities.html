@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activities - Language Learning Companion</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fixes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/container-padding.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         /* Activity-specific styles */
@@ -124,6 +124,34 @@
             background-color: #f8f9fa;
             border-radius: 8px;
         }
+        /* Styling for romanization */
+        .romanized {
+            color: #666;
+            font-size: 0.85em;
+            margin-left: 8px;
+            font-style: italic;
+        }
+        
+        /* Vocabulary item with romanization */
+        .vocab-item {
+            margin-bottom: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+        }
+        
+        .vocab-item .original {
+            font-weight: 500;
+        }
+        
+        /* Alternative display for vertical lists */
+        .romanized-block {
+            display: block;
+            margin-top: 2px;
+            margin-bottom: 8px;
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -234,5 +262,127 @@
             });
         });
     </script>
+    <script>
+        // Function to render vocabulary items with romanization
+        function renderWithRomanization(items, romanizedItems) {
+            if (!items || !Array.isArray(items)) return '';
+            
+            // If no romanization available, return simple list
+            if (!romanizedItems || !Array.isArray(romanizedItems)) {
+                return items.map(item => `<li>${item}</li>`).join('');
+            }
+            
+            // Ensure romanized items array is at least as long as the original items
+            while (romanizedItems.length < items.length) {
+                romanizedItems.push('');
+            }
+            
+            // Render each item with its romanization
+            return items.map((item, index) => {
+                const romanized = romanizedItems[index] || '';
+                return `<li class="vocab-item">
+                    <span class="original">${item}</span>
+                    ${romanized ? `<span class="romanized">(${romanized})</span>` : ''}
+                </li>`;
+            }).join('');
+        }
+    
+        // Function to determine if romanization should be shown
+        function needsRomanization(language) {
+            const nonLatinScripts = ["ja", "zh", "ko", "ru", "ar", "th", "he", "el", "uk", "bn", "hi"];
+            return nonLatinScripts.includes(language);
+        }
+    
+        // Enhanced conversation activity rendering
+        function renderConversationActivity(data) {
+            if (!data || data.error) {
+                return `
+                    <div class="error-message">
+                        <p>Sorry, there was an error generating the conversation activity.</p>
+                        <p>${data?.error || 'Unknown error'}</p>
+                    </div>
+                `;
+            }
+            
+            // Get language from current session (or default to English)
+            const targetLanguage = document.getElementById('target-language-code')?.value || 'en';
+            const showRomanization = needsRomanization(targetLanguage) && data.romanization;
+            
+            // Extract data with fallbacks for missing fields
+            const title = data.title || 'Conversation Practice';
+            const description = data.description || 'Practice your language skills with this conversation activity.';
+            const scenario = data.scenario || 'General conversation practice.';
+            const keyVocabulary = data.key_vocabulary || [];
+            const keyPhrases = data.key_phrases || [];
+            const questions = data.questions || [];
+            const hints = data.hints || [];
+            
+            // Get romanization data if available
+            const romanization = data.romanization || {};
+            const romanizedVocabulary = romanization.key_vocabulary || [];
+            const romanizedPhrases = romanization.key_phrases || [];
+            const romanizedQuestions = romanization.questions || [];
+            
+            return `
+                <div class="activity-card conversation-activity">
+                    <h2>${title}</h2>
+                    <p class="activity-description">${description}</p>
+                    
+                    <div class="scenario-box">
+                        <h3>Scenario</h3>
+                        <p>${scenario}</p>
+                    </div>
+                    
+                    ${keyVocabulary.length > 0 ? `
+                        <div class="vocabulary-box">
+                            <h3>Key Vocabulary</h3>
+                            <ul class="vocab-list">
+                                ${renderWithRomanization(keyVocabulary, romanizedVocabulary)}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${keyPhrases.length > 0 ? `
+                        <div class="phrases-box">
+                            <h3>Useful Phrases</h3>
+                            <ul class="phrase-list">
+                                ${renderWithRomanization(keyPhrases, romanizedPhrases)}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${questions.length > 0 ? `
+                        <div class="questions-box">
+                            <h3>Conversation Starters</h3>
+                            <ul class="question-list">
+                                ${renderWithRomanization(questions, romanizedQuestions)}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${hints.length > 0 ? `
+                        <div class="hints-box">
+                            <h3>Helpful Hints</h3>
+                            <ul class="hint-list">
+                                ${hints.map(hint => `<li>${hint}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="activity-footer">
+                        <a href="/conversation?topic=${encodeURIComponent(title)}" class="btn btn-primary">
+                            Start Conversation
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    
+        // Add similar modifications for renderFillInBlanksActivity and renderReadingActivity functions
+        // with romanization support where needed
+    </script>
+    
+    <!-- Add this hidden input to your activities.html to store the current language code -->
+    <input type="hidden" id="target-language-code" value="{{ user.target_language }}">
 </body>
 </html>
