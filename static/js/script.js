@@ -487,3 +487,24 @@ function getVocabularySuggestions(topic, count) {
         .then(response => response.json())
         .then(data => data.suggestions);
 }
+// Add this to your script.js file or in a new <script> tag at the end of your HTML
+document.addEventListener('DOMContentLoaded', function() {
+    const themeCheckbox = document.getElementById('theme-checkbox');
+    
+    // Check if user previously enabled dark mode
+    if (localStorage.getItem('darkMode') === 'enabled') {
+      document.body.classList.add('dark-mode');
+      themeCheckbox.checked = true;
+    }
+    
+    // Listen for toggle changes
+    themeCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    });
+  });
