@@ -1800,7 +1800,103 @@ def get_fallback_matching_activity(target_lang, native_lang, level):
     # Shuffle the target language words
     random.shuffle(shuffled_pairs)
     
-    # Create activity structure
+"""
+Romanization API endpoint for Language Learning Companion
+Add this route to your app.py file
+"""
+
+@app.route('/api/romanize', methods=['POST'])
+@login_required
+def romanize_text():
+    """API endpoint to romanize text."""
+    data = request.json
+    text = data.get('text', '').strip()
+    language = data.get('language', '')
+    
+    if not text:
+        return jsonify({"error": "Text cannot be empty"}), 400
+    
+    try:
+        # Use a simpler prompt format for more reliable romanization
+        prompt = f"""
+Romanize the following text written in {SUPPORTED_LANGUAGES.get(language, language)} 
+to show how it should be pronounced by an English speaker.
+
+Text: {text}
+
+Provide only the romanized version with each original term in parentheses. 
+For example:
+- For Japanese "こんにちは", return "konnichiwa (こんにちは)"
+- For Chinese "你好", return "nǐ hǎo (你好)"
+
+Your response should contain only the romanized text.
+"""
+        
+        response = openai.ChatCompletion.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a language romanization assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1024
+        )
+        romanized = response.choices[0].message.content.strip()
+        
+        return jsonify({"romanized": romanized})
+        
+    except Exception as e:
+        print(f"Error romanizing text: {e}")
+        return jsonify({"error": f"Romanization failed: {str(e)}"}), 500
+
+@app.route('/api/speak', methods=['POST'])
+@login_required
+def text_to_speech():
+    """API endpoint for text-to-speech conversion for all supported languages."""
+    data = request.json
+    text = data.get('text', '').strip()
+    language = data.get('language', 'en')
+    
+    if not text:
+        return jsonify({"error": "Text cannot be empty"}), 400
+    
+    try:
+        # Import required libraries
+        from gtts import gTTS
+        import uuid
+        import os
+        
+        # Map language code to gTTS format if needed
+        # Most language codes are already compatible
+        lang_map = {
+            'zh': 'zh-CN',  # Default Chinese to Mandarin
+            # Add any specific mappings needed
+        }
+        
+        tts_lang = lang_map.get(language, language)
+        
+        # Generate a unique filename
+        filename = f"speech_{uuid.uuid4()}.mp3"
+        
+        # Ensure audio directory exists
+        audio_dir = os.path.join('static', 'audio')
+        os.makedirs(audio_dir, exist_ok=True)
+        
+        filepath = os.path.join(audio_dir, filename)
+        
+        # Generate speech
+        tts = gTTS(text=text, lang=tts_lang, slow=False)
+        tts.save(filepath)
+        
+        # Return the URL to the audio file
+        audio_url = url_for('static', filename=f'audio/{filename}')
+        return jsonify({"audio_url": audio_url})
+        
+    except Exception as e:
+        import traceback
+        print(f"Error generating speech: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Speech synthesis failed: {str(e)}"}), 500
 
 # Error handlers
 @app.errorhandler(404)

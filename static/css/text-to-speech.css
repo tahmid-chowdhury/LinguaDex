@@ -1,0 +1,83 @@
+/* Improved text-to-speech styles that work with translation and romanization */
+
+/* Position the message relatively to allow absolute positioning of the button */
+.message {
+    position: relative;
+  }
+  
+  /* Style the speak button */
+  .speak-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10; /* Ensure button stays above content */
+  }
+  
+  /* Icon styling */
+  .speak-icon {
+    font-size: 16px;
+  }
+  
+  /* Different colors for user vs assistant messages */
+  .ai-message .speak-button {
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.1);
+  }
+  
+  .user-message .speak-button {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Hover effects */
+  .speak-button:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .ai-message .speak-button:hover {
+    background-color: rgba(52, 152, 219, 0.2);
+  }
+  
+  /* Button states */
+  .speak-button.loading {
+    animation: spin 1s infinite linear;
+  }
+  
+  .speak-button.playing {
+    animation: pulse 1s infinite;
+  }
+  
+  /* Ensure message content has some padding to avoid overlap with button */
+  .message-content {
+    padding-right: 35px !important;
+  }
+  
+  /* Make sure the button stays visible when message content changes */
+  .message.romanized .speak-button,
+  .message-translation + .speak-button {
+    right: 8px;
+    top: 8px;
+  }
+  
+  /* Animation keyframes */
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.7; }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

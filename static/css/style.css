@@ -1232,3 +1232,98 @@ main.content {
 .word-item.matched {
     animation: pulse 0.5s;
 }
+/* Romanization styles for Language Learning Companion */
+
+/* Romanized text */
+.romanized-text {
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 5px;
+    line-height: 1.5;
+    font-size: 0.95em;
+}
+
+/* Original text in romanized mode */
+.message.romanized .original-text {
+    font-weight: bold;
+}
+
+/* Romanize button */
+#romanize-toggle {
+    margin-left: 10px;
+    background-color: #7952b3;
+    color: white;
+}
+
+#romanize-toggle:hover {
+    background-color: #61428f;
+}
+
+/* Emphasized pronunciation parts */
+.romanized-text em {
+    font-style: normal;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Dual text display container */
+.dual-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* For activity pages that display vocabulary */
+.vocabulary-item.romanized .vocab-word {
+    display: flex;
+    flex-direction: column;
+}
+
+.vocabulary-item .romanized-pronunciation {
+    font-size: 0.85em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Romanization for key vocabulary lists */
+.vocabulary-box li.romanized,
+.phrases-box li.romanized,
+.questions-box li.romanized {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+/* Tooltip style for hover romanization */
+.romanize-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    border-bottom: 1px dotted #6c757d;
+}
+
+.romanize-tooltip .tooltip-text {
+    visibility: hidden;
+    width: auto;
+    min-width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-weight: normal;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.romanize-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
