@@ -3,6 +3,7 @@ import os
 import datetime
 import json
 import random
+import requests
 from functools import wraps
 
 # Import our modules
@@ -10,10 +11,7 @@ from database.db_handler import DatabaseHandler, init_db
 from models.llm_handler import LLMHandler
 from models.progress_tracker import ProgressTracker
 from utils.language_utils import LanguageUtils
-from config import SUPPORTED_LANGUAGES, CONVERSATION_TOPICS, OPENAI_MODEL
-
-# Import OpenAI for activity generation
-import openai
+from config import SUPPORTED_LANGUAGES, CONVERSATION_TOPICS, OPENROUTER_MODEL, OPENROUTER_API_KEY
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -21,7 +19,8 @@ app.secret_key = os.getenv("SECRET_KEY", "language-learning-companion-secret")
 
 # Display startup message
 print("=== Learning Language Companion Application Starting ===")
-print(f"OpenAI API Key available: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}")
+print(f"OpenRouter API Key available: {'Yes' if os.getenv('OPENROUTER_API_KEY') else 'No'}")
+print(f"Using model: {OPENROUTER_MODEL}")
 print("=============================================")
 
 # Initialize our components
@@ -141,18 +140,26 @@ Return ONLY the JSON object with no additional text or explanation.
     
     # Try generating the activity
     try:
-        # Generate activity with OpenAI
-        print("Calling OpenAI API for bilingual activity generation with romanization")
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": f"You are a bilingual language learning activity creator with expertise in {language_name} and {native_language_name}."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1024
+        # Generate activity with OpenRouter
+        print("Calling OpenRouter API for bilingual activity generation with romanization")
+        response = requests.post(
+            "https://api.openrouter.ai/v1/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": f"You are a bilingual language learning activity creator with expertise in {language_name} and {native_language_name}."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024
+            }
         )
-        activity_text = response.choices[0].message.content.strip()
+        response.raise_for_status()
+        activity_text = response.json()["choices"][0]["message"]["content"].strip()
         print(f"Raw API response received, length: {len(activity_text)}")
         
         # Clean up and extract JSON
@@ -496,18 +503,26 @@ Return ONLY the JSON object with no additional text or explanation.
 """
 
     try:
-        # Generate activity with OpenAI
-        print("Calling OpenAI API for fill-in-the-blanks activity")
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": f"You are a language learning assistant specialized in creating fill-in-the-blanks exercises for {language_name}."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1024
+        # Generate activity with OpenRouter
+        print("Calling OpenRouter API for fill-in-the-blanks activity")
+        response = requests.post(
+            "https://api.openrouter.ai/v1/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": f"You are a language learning assistant specialized in creating fill-in-the-blanks exercises for {language_name}."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024
+            }
         )
-        activity_text = response.choices[0].message.content.strip()
+        response.raise_for_status()
+        activity_text = response.json()["choices"][0]["message"]["content"].strip()
         
         # Clean up and extract JSON
         activity_text = activity_text.strip()
@@ -711,19 +726,27 @@ Return the following JSON structure:
 Return ONLY the JSON object with no additional text or explanation.
 """
     
-    # Generate activity with OpenAI
+    # Generate activity with OpenRouter
     try:
-        print("Calling OpenAI API for reading activity generation")
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": f"You are a language learning specialist who creates reading comprehension activities. You focus on {language_name} for {level} level students."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1500  # Increased token count for longer reading passages
+        print("Calling OpenRouter API for reading activity generation")
+        response = requests.post(
+            "https://api.openrouter.ai/v1/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": f"You are a language learning specialist who creates reading comprehension activities. You focus on {language_name} for {level} level students."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1500  # Increased token count for longer reading passages
+            }
         )
-        activity_text = response.choices[0].message.content.strip()
+        response.raise_for_status()
+        activity_text = response.json()["choices"][0]["message"]["content"].strip()
         
         # Parse and validate the activity
         activity = parse_and_validate_reading_activity(
@@ -1643,17 +1666,25 @@ Make sure the words are appropriate for a {level} level student.
 Output ONLY valid JSON without additional text.
 """
         
-        # Generate word pairs with OpenAI
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": f"You are a language learning vocabulary assistant specializing in {language_name} and {native_language_name}."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1024
+        # Generate word pairs with OpenRouter
+        response = requests.post(
+            "https://api.openrouter.ai/v1/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": f"You are a language learning vocabulary assistant specializing in {language_name} and {native_language_name}."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024
+            }
         )
-        result_text = response.choices[0].message.content.strip()
+        response.raise_for_status()
+        result_text = response.json()["choices"][0]["message"]["content"].strip()
         
         # Extract JSON
         if result_text.startswith("```json"):
@@ -1832,16 +1863,24 @@ For example:
 Your response should contain only the romanized text.
 """
         
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a language romanization assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=1024
+        response = requests.post(
+            "https://api.openrouter.ai/v1/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": "You are a language romanization assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 1024
+            }
         )
-        romanized = response.choices[0].message.content.strip()
+        response.raise_for_status()
+        romanized = response.json()["choices"][0]["message"]["content"].strip()
         
         return jsonify({"romanized": romanized})
         

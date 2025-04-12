@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # LLM Configuration
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # Options: "openai", "huggingface"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # Updated to use gpt-4o-mini
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")  # Options: "openrouter", "huggingface"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-pro-exp-03-25:free")
 HUGGINGFACE_MODEL = os.getenv("HUGGINGFACE_MODEL", "EleutherAI/gpt-neo-1.3B")
 
 # Database Configuration

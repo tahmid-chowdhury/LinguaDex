@@ -5,18 +5,15 @@ Save this file in the root directory of your project
 
 import json
 import random
-import openai
+import requests
 from config import (
-    OPENAI_API_KEY, OPENAI_MODEL, 
-    CONVERSATION_TOPICS, SUPPORTED_LANGUAGES
+    SUPPORTED_LANGUAGES, CONVERSATION_TOPICS, 
+    OPENROUTER_API_KEY, OPENROUTER_MODEL
 )
-
-# Initialize OpenAI with API key
-openai.api_key = OPENAI_API_KEY
 
 def generate_activity(user_info, activity_type="conversation", topic=None):
     """
-    Generate a language learning activity using OpenAI API.
+    Generate a language learning activity using OpenRouter API.
     
     Args:
         user_info: Dictionary with user properties (username, target_language, etc.)
@@ -42,25 +39,23 @@ def generate_activity(user_info, activity_type="conversation", topic=None):
 Create a {activity_type} language learning activity for a {level} level student learning {language_name}.
 Topic: {topic or "General conversation practice"}
 
-IMPORTANT: Format your response STRICTLY according to the structure below, depending on the activity type.
-
-For conversation activity:
+Return the activity as a JSON object with the following structure:
 {{
-  "title": "A descriptive title for the activity",
-  "description": "Brief explanation of what the user will practice",
-  "scenario": "Detailed scenario setting up the conversation context",
-  "key_vocabulary": ["word1", "word2", "word3", "word4", "word5"],
-  "key_phrases": ["Useful phrase 1", "Useful phrase 2", "Useful phrase 3"],
-  "questions": ["Question 1 to start conversation?", "Question 2 to continue?", "Question 3 to expand?"],
-  "hints": ["Helpful hint 1", "Helpful hint 2"]
+  "title": "Activity title",
+  "description": "Brief description of the activity and learning goals",
+  "scenario": "Detailed scenario for the activity (1-2 paragraphs)",
+  "key_vocabulary": ["word1", "word2", "word3"...],
+  "key_phrases": ["phrase 1", "phrase 2", "phrase 3"...],
+  "questions": ["Question 1?", "Question 2?", "Question 3?"],
+  "hints": ["Hint 1 for the activity", "Hint 2", "Hint 3"]
 }}
 
 For fill-in-blanks activity:
 {{
-  "title": "A descriptive title",
-  "description": "Brief explanation of the exercise",
-  "text": "This is an example ____ with blank spaces for ____ to fill in.",
-  "answers": ["text", "students"],
+  "title": "Fill-in-blanks activity title",
+  "description": "Brief description of the activity",
+  "text": "Text with blanks marked as ____ for students to fill in",
+  "answers": ["answer1", "answer2", "answer3", "answer4", "answer5"],
   "hints": ["Hint 1 for first blank", "Hint 2 for second blank"]
 }}
 
@@ -79,72 +74,82 @@ Return ONLY the JSON object with no additional text. Do not include ```json at t
 """
     
     try:
-        # Generate activity with OpenAI
-        print("Calling OpenAI API for activity generation")
-        response = openai.ChatCompletion.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a language learning activity generator that creates structured activities in JSON format."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1024
+        # Generate activity with OpenRouter
+        print("Calling OpenRouter API for activity generation")
+        response = requests.post(
+            "https://api.openrouter.ai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "HTTP-Referer": "https://linguadex.app",
+                "X-Title": "LinguaDex Language Learning App",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": "You are a language learning activity generator that creates structured activities in JSON format."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1500
+            }
         )
-        activity_text = response.choices[0].message.content.strip()
-        print(f"Raw API response received, length: {len(activity_text)}")
+        response.raise_for_status()
+        activity_text = response.json()["choices"][0]["message"]["content"].strip()
         
-        # Clean up and extract JSON from response
-        activity_text = activity_text.strip()
-        
-        # Handle various ways the model might format JSON
+        # Clean up and parse the JSON
         if activity_text.startswith("```json"):
-            print("Detected ```json format, extracting...")
             activity_text = activity_text.split("```json")[1].split("```")[0].strip()
         elif activity_text.startswith("```"):
-            print("Detected ``` format, extracting...")
             activity_text = activity_text.split("```")[1].split("```")[0].strip()
         
-        # Parse JSON with error handling
         try:
             activity = json.loads(activity_text)
-            print(f"Successfully parsed JSON with keys: {list(activity.keys())}")
+            print(f"Successfully generated {activity_type} activity: {activity.get('title', 'Untitled')}")
             return activity
-        except json.JSONDecodeError as json_err:
-            print(f"JSON parsing error: {json_err}")
             
-            # Try to fix common JSON issues
-            fixed_text = activity_text
-            # Replace single quotes with double quotes if needed
-            if "'" in fixed_text and '"' not in fixed_text:
-                fixed_text = fixed_text.replace("'", '"')
-                print("Attempted to fix quotes")
-            
-            # Try parsing again
-            try:
-                activity = json.loads(fixed_text)
-                print("Fixed JSON successfully")
-                return activity
-            except:
-                print("Could not fix JSON")
-                return {"error": "Could not parse activity JSON"}
-    
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error: {e}")
+            # Return error in a format the app can handle
+            return {"error": f"Could not parse activity: {str(e)}"}
+        
     except Exception as e:
-        import traceback
         print(f"Error generating activity: {e}")
-        traceback.print_exc()
-        return {"error": f"Could not generate {activity_type} activity: {str(e)}"}
+        # Return error in a format the app can handle
+        return {"error": f"Activity generation failed: {str(e)}"}
 
 
 # Create a simple fallback activity in case of error
 def get_fallback_activity(activity_type, language_code, level, topic=""):
+    """Create a fallback activity in case of API error."""
     language_name = SUPPORTED_LANGUAGES.get(language_code, "this language")
     
-    return {
-        "title": f"{activity_type.capitalize()} Exercise in {language_name}",
-        "description": f"A {level} level activity about {topic or 'general language practice'}.",
-        "scenario": "Practice your language skills with this activity.",
-        "key_vocabulary": ["hello", "goodbye", "thank you", "please", "help"],
-        "key_phrases": ["How are you?", "My name is...", "I would like...", "Can you help me?"],
-        "questions": ["What is your name?", "Where are you from?", "What do you like to do?"],
-        "hints": ["Try to use new vocabulary", "Practice your pronunciation"]
-    }
+    if activity_type == "conversation":
+        return {
+            "title": f"Conversation Practice in {language_name}",
+            "description": f"Practice basic conversation skills in {language_name}.",
+            "scenario": f"Imagine you are meeting someone new and need to introduce yourself.",
+            "key_vocabulary": ["hello", "name", "nice to meet you", "from", "goodbye"],
+            "key_phrases": ["My name is...", "I am from...", "Nice to meet you.", "How are you?"],
+            "questions": ["What is your name?", "Where are you from?", "How are you today?"],
+            "hints": ["Use the key vocabulary", "Try to form complete sentences", "Ask follow-up questions"]
+        }
+    elif activity_type == "fill-in-blanks":
+        return {
+            "title": f"Fill in the Blanks in {language_name}",
+            "description": f"Complete the sentences with the correct words.",
+            "text": "Hello! My ____ is Alex. I ____ from Canada. I ____ to learn languages. My favorite ____ is pizza. I ____ three languages.",
+            "answers": ["name", "am", "like", "food", "speak"],
+            "hints": ["Think about introductions", "Consider verb forms", "Think about hobbies", "Consider food items", "Think about abilities"]
+        }
+    else:  # reading
+        return {
+            "title": f"Reading Practice in {language_name}",
+            "description": f"Improve your reading comprehension in {language_name}.",
+            "text": f"This is a simple reading passage about daily routines. It uses basic vocabulary appropriate for {level} students.",
+            "questions": ["What is the main topic?", "What did you learn?", "Can you summarize the text?"],
+            "vocabulary": [
+                {"word": "example1", "definition": "Definition 1", "example": "Example sentence 1"},
+                {"word": "example2", "definition": "Definition 2", "example": "Example sentence 2"}
+            ]
+        }

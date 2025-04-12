@@ -3,9 +3,7 @@ import json
 import time
 import random
 from typing import List, Dict, Any, Tuple, Optional
-
-# OpenAI import
-import openai
+import requests
 
 # For open-source models
 try:
@@ -16,7 +14,7 @@ except ImportError:
     pass
 
 from config import (
-    LLM_PROVIDER, OPENAI_API_KEY, OPENAI_MODEL, 
+    LLM_PROVIDER, OPENROUTER_API_KEY, OPENROUTER_MODEL,
     HUGGINGFACE_MODEL, MAX_CONVERSATION_HISTORY,
     CONVERSATION_TOPICS, LEARNING_LEVELS, SUPPORTED_LANGUAGES
 )
@@ -29,10 +27,15 @@ class LLMHandler:
         self.model = None
         self.tokenizer = None
         
-        if self.provider == "openai":
-            # Initialize OpenAI with older client format
-            openai.api_key = OPENAI_API_KEY
-            self.model_name = OPENAI_MODEL
+        if self.provider == "openrouter":
+            # Initialize OpenRouter settings
+            self.api_key = OPENROUTER_API_KEY
+            self.model_name = OPENROUTER_MODEL
+            self.headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "HTTP-Referer": "https://linguadex.app",
+                "X-Title": "LinguaDex Language Learning App"
+            }
         
         elif self.provider == "huggingface":
             # Initialize Hugging Face model
@@ -156,48 +159,27 @@ Current session focus:
         
         return full_prompt, system_prompt
     
-    def _call_openai(self, prompt: str, system_prompt: str, temperature: float = 0.7) -> str:
-        """Call the OpenAI API with older client format."""
+    def _call_openrouter(self, prompt: str, system_prompt: str, temperature: float = 0.7) -> str:
+        """Call the OpenRouter API."""
         try:
-            # Parse the conversation history from the prompt
-            messages = []
-            
-            # Add system message
-            messages.append({"role": "system", "content": system_prompt})
-            
-            # Extract conversation (older method)
-            conversation_parts = prompt.split("User:")[1:] if "User:" in prompt else []
-            
-            # Process conversation history
-            for i, part in enumerate(conversation_parts[:-1] if conversation_parts else []):
-                # Split by "Assistant:" to separate user and assistant messages
-                parts = part.split("Assistant:")
-                if len(parts) > 1:
-                    user_content = parts[0].strip()
-                    assistant_content = parts[1].strip()
-                    
-                    messages.append({"role": "user", "content": user_content})
-                    messages.append({"role": "assistant", "content": assistant_content})
-                else:
-                    # Only user message
-                    messages.append({"role": "user", "content": parts[0].strip()})
-            
-            # Add the last user message if there is conversation
-            if conversation_parts:
-                last_user_content = conversation_parts[-1].split("Assistant:")[0].strip()
-                messages.append({"role": "user", "content": last_user_content})
-            
-            # Generate response with older API format
-            response = openai.ChatCompletion.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=1024
+            payload = {
+                "model": self.model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": temperature,
+                "max_tokens": 1024
+            }
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=self.headers,
+                json=payload
             )
-            return response.choices[0].message.content.strip()
-            
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            print(f"Error calling OpenAI API: {e}")
+            print(f"Error calling OpenRouter API: {e}")
             return "I'm sorry, I'm having trouble generating a response right now. Let's try again."
     
     def _call_huggingface(self, prompt: str, temperature: float = 0.7) -> str:
@@ -253,8 +235,8 @@ Current session focus:
         """
         prompt, system_prompt = self._format_conversation_prompt(user_info, conversation_history, session_goals)
         
-        if self.provider == "openai":
-            return self._call_openai(prompt, system_prompt, temperature)
+        if self.provider == "openrouter":
+            return self._call_openrouter(prompt, system_prompt, temperature)
         elif self.provider == "huggingface":
             return self._call_huggingface(prompt, temperature)
         else:
@@ -308,18 +290,24 @@ Output ONLY valid JSON without additional text.
 """
         
         try:
-            # Generate analysis with older API format
-            if self.provider == "openai":
-                response = openai.ChatCompletion.create(
-                    model=self.model_name,
-                    messages=[
+            # Generate analysis with OpenRouter
+            if self.provider == "openrouter":
+                payload = {
+                    "model": self.model_name,
+                    "messages": [
                         {"role": "system", "content": "You are a language learning analysis assistant."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.3,
-                    max_tokens=1024
+                    "temperature": 0.3,
+                    "max_tokens": 1024
+                }
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=self.headers,
+                    json=payload
                 )
-                analysis_text = response.choices[0].message.content.strip()
+                response.raise_for_status()
+                analysis_text = response.json()["choices"][0]["message"]["content"].strip()
             elif self.provider == "huggingface":
                 full_prompt = f"You are a language learning analysis assistant.\nUser: {prompt}\nAssistant:"
                 analysis_text = self._call_huggingface(full_prompt, temperature=0.3)
@@ -394,18 +382,24 @@ Output ONLY valid JSON without additional text.
 """
         
         try:
-            # Generate suggestions with older API format
-            if self.provider == "openai":
-                response = openai.ChatCompletion.create(
-                    model=self.model_name,
-                    messages=[
+            # Generate suggestions with OpenRouter
+            if self.provider == "openrouter":
+                payload = {
+                    "model": self.model_name,
+                    "messages": [
                         {"role": "system", "content": "You are a language learning vocabulary assistant."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.5,
-                    max_tokens=1024
+                    "temperature": 0.5,
+                    "max_tokens": 1024
+                }
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=self.headers,
+                    json=payload
                 )
-                suggestions_text = response.choices[0].message.content.strip()
+                response.raise_for_status()
+                suggestions_text = response.json()["choices"][0]["message"]["content"].strip()
             elif self.provider == "huggingface":
                 full_prompt = f"You are a language learning vocabulary assistant.\nUser: {prompt}\nAssistant:"
                 suggestions_text = self._call_huggingface(full_prompt, temperature=0.5)
@@ -453,18 +447,24 @@ Provide ONLY the translation without any additional text.
 """
         
         try:
-            # Generate translation with older API format
-            if self.provider == "openai":
-                response = openai.ChatCompletion.create(
-                    model=self.model_name,
-                    messages=[
+            # Generate translation with OpenRouter
+            if self.provider == "openrouter":
+                payload = {
+                    "model": self.model_name,
+                    "messages": [
                         {"role": "system", "content": "You are a helpful translation assistant."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.3,
-                    max_tokens=1024
+                    "temperature": 0.3,
+                    "max_tokens": 1024
+                }
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=self.headers,
+                    json=payload
                 )
-                translation = response.choices[0].message.content.strip()
+                response.raise_for_status()
+                translation = response.json()["choices"][0]["message"]["content"].strip()
             elif self.provider == "huggingface":
                 full_prompt = f"You are a helpful translation assistant.\nUser: {prompt}\nAssistant:"
                 translation = self._call_huggingface(full_prompt, temperature=0.3)
