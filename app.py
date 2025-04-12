@@ -1864,7 +1864,7 @@ Your response should contain only the romanized text.
 """
         
         response = requests.post(
-            "https://api.openrouter.ai/v1/completions",
+            "https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                 "Content-Type": "application/json"
